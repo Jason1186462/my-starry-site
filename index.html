@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1231">
+<title>我的小网站</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 42px 20px;
+    color: #eaf1ff;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.9), transparent 50%),
+      radial-gradient(1px 1px at 28% 68%, rgba(255,255,255,.75), transparent 50%),
+      radial-gradient(1.5px 1.5px at 44% 14%, rgba(190,210,255,.95), transparent 50%),
+      radial-gradient(1px 1px at 58% 44%, rgba(255,255,255,.8), transparent 50%),
+      radial-gradient(1px 1px at 71% 26%, rgba(180,210,255,.85), transparent 50%),
+      radial-gradient(1.5px 1.5px at 83% 60%, rgba(255,255,255,.8), transparent 50%),
+      radial-gradient(1px 1px at 92% 18%, rgba(255,255,255,.75), transparent 50%),
+      radial-gradient(1px 1px at 18% 88%, rgba(255,255,255,.7), transparent 50%),
+      radial-gradient(1.5px 1.5px at 68% 86%, rgba(190,210,255,.8), transparent 50%),
+      linear-gradient(160deg, #0c1233 0%, #1b2352 48%, #10173a 100%);
+    background-attachment: fixed;
+  }
+
+  .home {
+    width: min(100%, 860px);
+    text-align: center;
+  }
+
+  .home h1 {
+    margin: 0;
+    font-size: clamp(30px, 7vw, 52px);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-indent: 0.12em;
+    text-shadow: 0 0 24px rgba(130, 170, 255, 0.45);
+  }
+
+  .home .lead {
+    margin: 12px 0 34px;
+    color: rgba(234, 241, 255, 0.72);
+    font-size: clamp(13px, 2.6vw, 16px);
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    text-align: left;
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 20px 18px;
+    border-radius: 22px;
+    color: inherit;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+
+  .card:hover,
+  .card:focus-visible {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.38);
+    background: rgba(255, 255, 255, 0.09);
+    outline: none;
+  }
+
+  .card .icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    font-size: 30px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  }
+
+  .card.stars .icon {
+    background: radial-gradient(circle at 35% 30%, #90c2ff, #2749a8 75%);
+  }
+
+  .card.emu .icon {
+    background: radial-gradient(circle at 35% 30%, #ffd38f, #e06c3a 78%);
+  }
+
+  .card h2 {
+    margin: 0 0 6px;
+    font-size: clamp(19px, 4vw, 25px);
+    letter-spacing: 0.06em;
+  }
+
+  .card p {
+    margin: 0;
+    color: rgba(234, 241, 255, 0.68);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .card .go {
+    display: block;
+    margin-top: 9px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+
+  .footnote {
+    margin-top: 26px;
+    color: rgba(234, 241, 255, 0.42);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-indent: 0.14em;
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 28px 14px; }
+    .cards { grid-template-columns: 1fr; gap: 14px; }
+    .card { padding: 16px; }
+    .card .icon { width: 56px; height: 56px; font-size: 26px; border-radius: 15px; }
+  }
+</style>
+</head>
+<body>
+  <main class="home">
+    <h1>我的小网站</h1>
+    <p class="lead">✦ 一个可以装进口袋的星空小站 ✦</p>
+
+    <div class="cards">
+      <a class="card stars" href="./stars.html">
+        <span class="icon" aria-hidden="true">✨</span>
+        <span>
+          <h2>星空</h2>
+          <p>整片夜空在眼前闪烁，星星一闪一闪，点击还能召唤流星许愿。</p>
+          <span class="go">进入星空 →</span>
+        </span>
+      </a>
+
+      <a class="card emu" href="./emu-bike.html">
+        <span class="icon" aria-hidden="true">🚴</span>
+        <span>
+          <h2>鸸鹋骑自行车</h2>
+          <p>一只快乐的长脖子鸸鹋，蹬着红色自行车环游荒野，风里带着咕咕声。</p>
+          <span class="go">去看鸸鹋 →</span>
+        </span>
+      </a>
+    </div>
+
+    <p class="footnote">手机与电脑都可以打开</p>
+  </main>
+</body>
+</html>
