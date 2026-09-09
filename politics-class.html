@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2436">
+<title>政治课小剧场</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 12px;
+    background:
+      radial-gradient(900px 500px at 15% -10%, #2a3550 0%, transparent 60%),
+      radial-gradient(900px 500px at 90% 110%, #31283f 0%, transparent 60%),
+      linear-gradient(160deg, #121827 0%, #1b2336 55%, #101522 100%);
+    color: #eef3ff;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    touch-action: manipulation;
+  }
+
+  .stage {
+    width: min(100%, 980px);
+  }
+
+  .topnav {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 30;
+  }
+
+  .topnav a {
+    display: inline-block;
+    color: #eef3ff;
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 7px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(18, 24, 44, 0.55);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(19px, 4vw, 28px);
+    letter-spacing: 0.08em;
+  }
+
+  header .tag {
+    color: rgba(238, 243, 255, 0.62);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+
+  .scene {
+    position: relative;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 960 / 600;
+    border-radius: 18px;
+    background: #efe7d5;
+    box-shadow:
+      0 24px 60px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+
+  .grain,
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 18px;
+  }
+
+  .grain {
+    opacity: 0.12;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+
+  .vignette {
+    background: radial-gradient(115% 85% at 50% 42%, transparent 55%, rgba(35, 25, 10, 0.28) 100%);
+  }
+
+  .bubble {
+    position: absolute;
+    pointer-events: none;
+    font-size: clamp(16px, 3.2vw, 27px);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    opacity: 0;
+    transform: translateY(4px) scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+  }
+
+  .bubble.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .bubble.left {
+    left: 4%;
+    top: 16%;
+    background: #f05a3c;
+    animation: shakeTalk 0.5s ease-in-out infinite;
+  }
+
+  .bubble.right {
+    right: 4%;
+    top: 30%;
+    background: #4f83d8;
+    animation: bobTalk 0.8s ease-in-out infinite;
+  }
+
+  @keyframes shakeTalk {
+    0%, 100% { transform: translateX(0) rotate(-1deg); }
+    25% { transform: translateX(-3px) rotate(1deg); }
+    75% { transform: translateX(3px) rotate(-1deg); }
+  }
+
+  @keyframes bobTalk {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  .hint {
+    position: absolute;
+    left: 50%;
+    bottom: 6%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background: rgba(20, 25, 45, 0.72);
+    color: #fff;
+    font-size: clamp(12px, 2.5vw, 16px);
+    padding: 8px 16px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    max-width: 92%;
+    white-space: normal;
+    text-align: center;
+    transition: opacity 0.4s ease;
+  }
+
+  .hint.hide { opacity: 0; }
+
+  .restart {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(18, 24, 44, 0.6);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 15px;
+    border-radius: 999px;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  .restart:hover { background: rgba(255, 255, 255, 0.14); }
+
+  .footnote {
+    margin-top: 12px;
+    text-align: center;
+    color: rgba(238, 243, 255, 0.45);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+  }
+</style>
+</head>
+<body>
+  <nav class="topnav"><a href="./index.html">‹ 返回首页</a></nav>
+  <main class="stage">
+    <header>
+      <h1>政治课小剧场</h1>
+      <span class="tag">🎬 点击老师开始演出</span>
+    </header>
+
+    <div class="scene">
+      <canvas id="stage" width="960" height="600"></canvas>
+      <div class="grain" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="bubble left" id="teacherBubble"></div>
+      <div class="bubble right" id="girlBubble"></div>
+      <button class="restart" id="restartBtn" type="button">↻ 重新开始</button>
+      <div class="hint" id="hint">点击左边拿试卷的老师</div>
+    </div>
+
+    <p class="footnote">纯动画小剧场 · 纯属虚构</p>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const teacherBubble = document.getElementById("teacherBubble");
+  const girlBubble = document.getElementById("girlBubble");
+  const restartBtn = document.getElementById("restartBtn");
+  const hint = document.getElementById("hint");
+
+  const W = 960;
+  const H = 600;
+  const TAU = Math.PI * 2;
+
+  // 演出状态
+  let mode = "idle";            // idle | angry | crying | fallen | cheered
+  let angryStart = 0;
+  let cryStart = 0;
+  let now = 0;
+
+  const ANGRY_SECONDS = 1.5;
+  const CRY_SECONDS = 3.0;
+  const FALL_SECONDS = 0.65;
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const easeOut = (k) => 1 - Math.pow(1 - k, 3);
+
+  function resize() {
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  }
+
+  function rrect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function circle(x, y, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+  }
+
+  function strokeLine(x1, y1, x2, y2, w, color, cap) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = cap || "round";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  function updateUI() {
+    if (mode === "idle") {
+      teacherBubble.classList.remove("show");
+      girlBubble.classList.remove("show");
+      hint.classList.remove("hide");
+      canvas.style.cursor = "pointer";
+      return;
+    }
+
+    if (mode === "fallen") {
+      hint.textContent = "点击小女孩安慰她";
+      hint.classList.remove("hide");
+    } else if (mode === "cheered") {
+      hint.textContent = "点击小女孩回到开始 · 点击老师再演一次";
+      hint.classList.remove("hide");
+    } else {
+      hint.classList.add("hide");
+    }
+    canvas.style.cursor = mode === "fallen" || mode === "cheered" ? "pointer" : "default";
+    teacherBubble.classList.add("show");
+
+    if (mode === "angry") {
+      teacherBubble.textContent = "才考54分？！";
+      girlBubble.classList.remove("show");
+    } else if (mode === "crying") {
+      teacherBubble.textContent = "好好想想！";
+      girlBubble.textContent = "呜哇——";
+      girlBubble.classList.add("show");
+    } else if (mode === "fallen") {
+      teacherBubble.textContent = "唉…下次好好背";
+      girlBubble.textContent = "呜呜…";
+      girlBubble.classList.add("show");
+    } else {
+      teacherBubble.textContent = "这才像话";
+      girlBubble.textContent = "我会加油的！";
+      girlBubble.classList.add("show");
+    }
+  }
+
+  function reset() {
+    mode = "idle";
+    updateUI();
+  }
+
+  function startAnger() {
+    if (mode === "angry" || mode === "crying") return;
+    mode = "angry";
+    angryStart = now;
+    updateUI();
+  }
+
+  function cheerUpGirl() {
+    if (mode === "fallen") {
+      mode = "cheered";
+      updateUI();
+    } else if (mode === "cheered") {
+      reset();
+    }
+  }
+
+  // ---------------- 教室背景 ----------------
+  function drawRoom() {
+    const wall = ctx.createLinearGradient(0, 0, 0, 460);
+    wall.addColorStop(0, "#fdf7e8");
+    wall.addColorStop(1, "#f2e3c6");
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 0, W, 460);
+
+    // 地板
+    const floor = ctx.createLinearGradient(0, 460, 0, H);
+    floor.addColorStop(0, "#d6b98d");
+    floor.addColorStop(1, "#bfa075");
+    ctx.fillStyle = floor;
+    ctx.fillRect(0, 460, W, H - 460);
+    ctx.strokeStyle = "rgba(160,125,85,0.5)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 140 - 30, 460);
+      ctx.lineTo(i * 140 - 100, H);
+      ctx.stroke();
+    }
+
+    // 黑板
+    rrect(300, 62, 360, 230, 10);
+    ctx.fillStyle = "#5d3a28";
+    ctx.fill();
+    rrect(313, 75, 334, 204, 6);
+    ctx.fillStyle = "#3c6b52";
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(250,250,240,0.88)";
+    ctx.font = "700 28px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("政 治", 480, 118);
+    ctx.font = "15px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillStyle = "rgba(250,250,240,0.68)";
+    ctx.fillText("好好学习 · 天天向上", 480, 252);
+    ctx.strokeStyle = "rgba(250,250,240,0.45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(345, 145);
+    ctx.lineTo(615, 145);
+    ctx.stroke();
+
+    // 时钟
+    circle(778, 100, 26, "#fff");
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(778, 100, 26, 0, TAU);
+    ctx.stroke();
+    strokeLine(778, 100, 778, 84, 3, "#333");
+    strokeLine(778, 100, 791, 105, 3, "#333");
+
+    // 窗户
+    ctx.fillStyle = "#bcddf2";
+    rrect(690, 150, 150, 150, 5);
+    ctx.fill();
+    ctx.strokeStyle = "#9c7c55";
+    ctx.lineWidth = 6;
+    rrect(690, 150, 150, 150, 5);
+    ctx.stroke();
+    strokeLine(765, 150, 765, 300, 6, "#9c7c55");
+    strokeLine(690, 225, 840, 225, 6, "#9c7c55");
+  }
+
+  // ---------------- 通用绘制助手 ----------------
+  function fillC(c) { ctx.fillStyle = c; ctx.fill(); }
+  function inkC(c, w) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.stroke(); }
+  function fsC(f, s, w) { ctx.fillStyle = f; ctx.fill(); if (s) { ctx.strokeStyle = s; ctx.lineWidth = w || 1.6; ctx.stroke(); } }
+
+  // 写实脸型：椭圆颅顶 + 柔和下颌 + 略尖下巴
+  function headPath(cx, cy, hw, hh) {
+    ctx.beginPath();
+    ctx.moveTo(cx - hw, cy - hh * 0.15);
+    ctx.bezierCurveTo(cx - hw, cy - hh * 1.0, cx + hw, cy - hh * 1.0, cx + hw, cy - hh * 0.15);
+    ctx.bezierCurveTo(cx + hw, cy + hh * 0.38, cx + hw * 0.66, cy + hh * 0.82, cx, cy + hh);
+    ctx.bezierCurveTo(cx - hw * 0.66, cy + hh * 0.82, cx - hw, cy + hh * 0.38, cx - hw, cy - hh * 0.15);
+    ctx.closePath();
+  }
+
+  // 眨眼曲线：大部分时间睁开，周期性快速闭合
+  function blinkOpen(t, off, period) {
+    const P = period || 3.8;
+    const p = (t + off) % P;
+    const c = 0.16;
+    if (p > P - c) {
+      const k = (p - (P - c)) / c;
+      return k < 0.5 ? 1 - 2 * k : 2 * k - 1;
+    }
+    return 1;
+  }
+
+  // 写实杏仁眼：双眼皮 + 渐变虹膜 + 睫毛 + 卧蚕
+  function realEye(ex, ey, w, h, eo, iris, lash, dir, opts) {
+    opts = opts || {};
+    const hh = h * Math.max(0.08, eo);
+    ctx.beginPath();
+    ctx.moveTo(ex - w, ey + h * 0.12);
+    ctx.quadraticCurveTo(ex - w * 0.35, ey - hh, ex + w * 0.25, ey - hh * 0.86);
+    ctx.quadraticCurveTo(ex + w * 0.8, ey - hh * 0.5, ex + w, ey + h * 0.12);
+    ctx.quadraticCurveTo(ex + w * 0.3, ey + hh * 0.82, ex - w * 0.3, ey + hh * 0.8);
+    ctx.quadraticCurveTo(ex - w * 0.8, ey + hh * 0.55, ex - w, ey + h * 0.12);
+    ctx.closePath();
+    fillC("#fbf9f7");
+    ctx.save();
+    ctx.clip();
+    const ir = w * (opts.irisK || 0.52);
+    const g = ctx.createRadialGradient(ex - ir * 0.3, ey - ir * 0.45, ir * 0.15, ex, ey, ir);
+    g.addColorStop(0, iris[0]); g.addColorStop(0.7, iris[1]); g.addColorStop(1, iris[2]);
+    ctx.beginPath(); ctx.arc(ex + dir * 0.4, ey - h * 0.02, ir, 0, TAU); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + dir * 0.4, ey - h * 0.02, ir, 0, TAU); inkC("rgba(28,18,12,0.5)", 0.8);
+    ctx.beginPath(); ctx.arc(ex + dir * 0.4, ey - h * 0.02, ir * 0.44, 0, TAU); fillC("#1d130c");
+    ctx.beginPath(); ctx.arc(ex + dir * 0.4 - ir * 0.34, ey - ir * 0.4, ir * 0.3, 0, TAU); fillC("rgba(255,255,255,0.95)");
+    ctx.beginPath(); ctx.arc(ex + dir * 0.4 + ir * 0.4, ey + ir * 0.35, ir * 0.15, 0, TAU); fillC("rgba(255,255,255,0.55)");
+    // 上睑投影
+    ctx.beginPath();
+    ctx.moveTo(ex - w, ey - h * 0.2);
+    ctx.quadraticCurveTo(ex, ey - hh * 1.05, ex + w, ey - h * 0.2);
+    ctx.lineTo(ex + w, ey - h * 1.4); ctx.lineTo(ex - w, ey - h * 1.4);
+    ctx.closePath();
+    fillC("rgba(70,42,30,0.16)");
+    ctx.restore();
+    ctx.lineCap = "round";
+    // 上睫毛线
+    ctx.beginPath();
+    ctx.moveTo(ex - w, ey + h * 0.1);
+    ctx.quadraticCurveTo(ex - w * 0.3, ey - hh * 1.06, ex + w * 0.3, ey - hh * 0.92);
+    ctx.quadraticCurveTo(ex + w * 0.8, ey - hh * 0.56, ex + w * 1.02, ey + h * 0.06);
+    inkC(lash, opts.lashW || 1.8);
+    // 外眼角睫毛
+    ctx.beginPath();
+    ctx.moveTo(ex + dir * w * 0.95, ey - hh * 0.35);
+    ctx.quadraticCurveTo(ex + dir * w * 1.28, ey - hh * 0.72, ex + dir * w * 1.42, ey - hh * 0.88);
+    inkC(lash, (opts.lashW || 1.8) * 0.7);
+    if (opts.fold) {
+      ctx.beginPath();
+      ctx.moveTo(ex - w * 0.85, ey - hh * 0.75);
+      ctx.quadraticCurveTo(ex, ey - hh * 1.5, ex + w * 0.85, ey - hh * 0.7);
+      inkC("rgba(150,95,70,0.22)", 0.8);
+    }
+    // 卧蚕 / 下睑
+    ctx.beginPath();
+    ctx.moveTo(ex - w * 0.5, ey + hh * 0.78);
+    ctx.quadraticCurveTo(ex, ey + hh * (opts.bag || 0.95), ex + w * 0.5, ey + hh * 0.75);
+    inkC(opts.bagC || "rgba(160,105,85,0.2)", 0.8);
+    if (eo < 0.25) {
+      ctx.beginPath();
+      ctx.moveTo(ex - w, ey + h * 0.1);
+      ctx.quadraticCurveTo(ex, ey + h * 0.55, ex + w, ey + h * 0.1);
+      inkC(lash, 1.5);
+    }
+  }
+
+  // ---------------- 写实风·年长政治老师 ----------------
+  function drawTeacher(anger) {
+    const tx = 260;
+    const feetY = 548;
+    const a = anger;
+    const breath = Math.sin(now * 1.7) * 1.3 * (1 - a * 0.5);
+    const eo = blinkOpen(now, 0.9, 4.4);
+
+    ctx.save();
+    ctx.translate(tx, feetY);
+    ctx.rotate(Math.sin(now * 0.8) * 0.006 + (a > 0.01 ? Math.sin(now * 47) * 0.025 * a : 0));
+    ctx.translate(-tx, -feetY);
+    if (a > 0.01) ctx.translate(Math.sin(now * 63) * 2.4 * a + Math.sin(now * 29) * 1.2 * a, 0);
+
+    // 怒气红光
+    if (a > 0.02) {
+      const g = ctx.createRadialGradient(tx, 340, 20, tx, 340, 250);
+      g.addColorStop(0, "rgba(255,50,40," + (0.26 * a) + ")");
+      g.addColorStop(1, "rgba(255,50,40,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(tx - 260, 80, 520, 500);
+    }
+
+    // 西裤
+    const trouser = ctx.createLinearGradient(tx - 32, 372, tx + 32, 540);
+    trouser.addColorStop(0, "#2b2d36"); trouser.addColorStop(1, "#191b22");
+    ctx.beginPath();
+    ctx.moveTo(tx - 32, 372); ctx.lineTo(tx - 6, 372); ctx.lineTo(tx - 10, 538); ctx.lineTo(tx - 30, 538); ctx.closePath();
+    fsC(trouser, "#101116", 1.6);
+    ctx.beginPath();
+    ctx.moveTo(tx + 6, 372); ctx.lineTo(tx + 32, 372); ctx.lineTo(tx + 30, 538); ctx.lineTo(tx + 10, 538); ctx.closePath();
+    fsC(trouser, "#101116", 1.6);
+    ctx.beginPath(); ctx.moveTo(tx - 21, 380); ctx.lineTo(tx - 20, 532); ctx.moveTo(tx + 21, 380); ctx.lineTo(tx + 20, 532);
+    inkC("rgba(255,255,255,0.06)", 1.4);
+    // 皮鞋
+    ctx.beginPath();
+    ctx.ellipse(tx - 22, 543, 22, 8, 0, 0, TAU);
+    ctx.ellipse(tx + 22, 543, 22, 8, 0, 0, TAU);
+    fsC("#1a1b20", "#000000", 1.4);
+    ctx.beginPath(); ctx.moveTo(tx - 34, 541); ctx.quadraticCurveTo(tx - 22, 537, tx - 10, 541); ctx.moveTo(tx + 10, 541); ctx.quadraticCurveTo(tx + 22, 537, tx + 34, 541);
+    inkC("rgba(255,255,255,0.14)", 1.2);
+
+    // ---- 呼吸组：上身 + 头 ----
+    ctx.save();
+    ctx.translate(0, breath);
+
+    // 脖子
+    ctx.beginPath(); ctx.moveTo(tx - 10, 244); ctx.lineTo(tx + 10, 244); ctx.lineTo(tx + 12, 268); ctx.lineTo(tx - 12, 268); ctx.closePath();
+    fsC("#d99f74", "#a97549", 1.4);
+    ctx.beginPath(); ctx.ellipse(tx, 250, 10, 4, 0, 0, TAU); fillC("rgba(120,70,40,0.22)");
+
+    // 西装上身
+    const suitG = ctx.createLinearGradient(tx - 56, 262, tx + 56, 384);
+    suitG.addColorStop(0, "#40444f"); suitG.addColorStop(0.5, "#2a2d36"); suitG.addColorStop(1, "#1a1c24");
+    ctx.beginPath();
+    ctx.moveTo(tx - 44, 266);
+    ctx.quadraticCurveTo(tx - 50, 280, tx - 48, 308);
+    ctx.quadraticCurveTo(tx - 46, 348, tx - 38, 380);
+    ctx.lineTo(tx + 38, 380);
+    ctx.quadraticCurveTo(tx + 46, 348, tx + 48, 308);
+    ctx.quadraticCurveTo(tx + 50, 280, tx + 44, 266);
+    ctx.quadraticCurveTo(tx, 250, tx - 44, 266);
+    ctx.closePath();
+    fsC(suitG, "#14151b", 1.8);
+    // 布料褶皱
+    ctx.beginPath();
+    ctx.moveTo(tx - 34, 300); ctx.quadraticCurveTo(tx - 30, 330, tx - 32, 362);
+    ctx.moveTo(tx + 34, 300); ctx.quadraticCurveTo(tx + 30, 330, tx + 32, 362);
+    ctx.moveTo(tx - 12, 344); ctx.quadraticCurveTo(tx - 8, 360, tx - 10, 376);
+    inkC("rgba(0,0,0,0.22)", 1.3);
+    ctx.beginPath(); ctx.moveTo(tx - 42, 270); ctx.quadraticCurveTo(tx, 254, tx + 42, 270); inkC("rgba(255,255,255,0.12)", 2);
+
+    // 衬衫 + 翻领 + 领带
+    ctx.beginPath(); ctx.moveTo(tx - 14, 266); ctx.lineTo(tx, 306); ctx.lineTo(tx + 14, 266); ctx.closePath();
+    fsC("#f2efe6", "#c6bfae", 1.2);
+    ctx.beginPath(); ctx.moveTo(tx - 14, 266); ctx.lineTo(tx - 3, 296); ctx.lineTo(tx - 22, 280); ctx.closePath();
+    fsC("#31343e", "#14151b", 1.4);
+    ctx.beginPath(); ctx.moveTo(tx + 14, 266); ctx.lineTo(tx + 3, 296); ctx.lineTo(tx + 22, 280); ctx.closePath();
+    fsC("#31343e", "#14151b", 1.4);
+    const tieG = ctx.createLinearGradient(tx - 6, 270, tx + 6, 335);
+    tieG.addColorStop(0, "#d2183a"); tieG.addColorStop(1, "#8e0d22");
+    ctx.beginPath(); ctx.moveTo(tx - 5, 270); ctx.lineTo(tx + 5, 270); ctx.lineTo(tx + 3.5, 278); ctx.lineTo(tx - 3.5, 278); ctx.closePath();
+    fsC(tieG, "#6d0a1a", 1.2);
+    ctx.beginPath(); ctx.moveTo(tx - 3.5, 278); ctx.lineTo(tx + 3.5, 278); ctx.lineTo(tx + 6, 326); ctx.lineTo(tx, 335); ctx.lineTo(tx - 6, 326); ctx.closePath();
+    fsC(tieG, "#6d0a1a", 1.2);
+    // 衬衫领
+    ctx.beginPath(); ctx.moveTo(tx - 17, 262); ctx.lineTo(tx + 17, 262); ctx.lineTo(tx + 11, 272); ctx.lineTo(tx - 11, 272); ctx.closePath();
+    fsC("#f2efe6", "#c6bfae", 1.2);
+
+    // 手臂
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(tx - 42, 274);
+    ctx.quadraticCurveTo(tx - 80, 312, tx - 96, 356);
+    ctx.quadraticCurveTo(tx - 105, 382, tx - 110, 396);
+    inkC("#24272f", 17);
+    ctx.beginPath();
+    ctx.moveTo(tx + 42, 274);
+    ctx.quadraticCurveTo(tx + 78, 312, tx + 94, 356);
+    ctx.quadraticCurveTo(tx + 103, 382, tx + 108, 396);
+    inkC("#24272f", 17);
+
+    // 政治书
+    const bx = 84, by = 252, bw = 92, bh = 150;
+    const bookG = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+    bookG.addColorStop(0, "#3d5fae"); bookG.addColorStop(1, "#27407e");
+    ctx.fillStyle = bookG;
+    rrect(bx, by, bw, bh, 8); ctx.fill();
+    ctx.strokeStyle = "#1d2f5e"; ctx.lineWidth = 3;
+    rrect(bx, by, bw, bh, 8); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillRect(bx + 10, by + 12, bw - 20, 4);
+    ctx.fillRect(bx + 10, by + 24, bw - 34, 3);
+    ctx.font = "700 30px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#ffe9a8";
+    ctx.fillText("政治", bx + bw / 2, by + 90);
+    ctx.font = "13px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.fillText("必修 1", bx + bw / 2, by + 125);
+
+    // 54分试卷
+    const px = 334, py = 260, pw = 108, ph = 148;
+    ctx.fillStyle = "#fbfbf6";
+    rrect(px, py, pw, ph, 5); ctx.fill();
+    ctx.strokeStyle = "#c9c3b5"; ctx.lineWidth = 2.4;
+    rrect(px, py, pw, ph, 5); ctx.stroke();
+    ctx.strokeStyle = "#aab3c4"; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + 14, py + 18); ctx.lineTo(px + pw - 14, py + 18);
+    ctx.moveTo(px + 14, py + 30); ctx.lineTo(px + pw - 40, py + 30);
+    ctx.stroke();
+    ctx.fillStyle = "#d8182c";
+    ctx.font = "900 58px Georgia,serif";
+    ctx.textAlign = "center";
+    ctx.fillText("54", px + pw / 2, py + 98);
+    ctx.lineWidth = 5; ctx.strokeStyle = "#d8182c";
+    ctx.beginPath(); ctx.arc(px + pw / 2, py + 122, 17, 0, TAU); ctx.stroke();
+
+    // 手
+    circle(tx - 112, 398, 10.5, "#e5ad80");
+    circle(tx + 110, 398, 10.5, "#e5ad80");
+    ctx.beginPath(); ctx.arc(tx - 112, 398, 10.5, 0, TAU); inkC("rgba(150,95,60,0.5)", 1.2);
+    ctx.beginPath(); ctx.arc(tx + 110, 398, 10.5, 0, TAU); inkC("rgba(150,95,60,0.5)", 1.2);
+
+    // ---- 头部组（轻微点头） ----
+    ctx.save();
+    ctx.translate(tx, 262);
+    ctx.rotate(Math.sin(now * 1.05) * 0.012 * (1 - a * 0.6) + a * 0.02);
+    ctx.translate(-tx, -262);
+
+    const hx = tx, hy = 222;
+    circle(hx - 22, 226, 4.5, "#dda175");
+    circle(hx + 22, 226, 4.5, "#dda175");
+    headPath(hx, hy, 22, 26);
+    const skinG = ctx.createLinearGradient(hx - 22, hy - 26, hx + 22, hy + 26);
+    if (a > 0.2) { skinG.addColorStop(0, "#e8a87e"); skinG.addColorStop(1, "#c0714c"); }
+    else { skinG.addColorStop(0, "#efc09a"); skinG.addColorStop(1, "#d09a6e"); }
+    fsC(skinG, "rgba(140,90,55,0.55)", 1.4);
+    // 面部体积阴影
+    ctx.beginPath(); ctx.ellipse(hx - 13, hy + 12, 9, 6, -0.3, 0, TAU); ctx.ellipse(hx + 13, hy + 12, 9, 6, 0.3, 0, TAU);
+    fillC("rgba(150,90,55,0.12)");
+    ctx.beginPath(); ctx.ellipse(hx, hy + 20, 7, 4, 0, 0, TAU); fillC("rgba(150,90,55,0.1)");
+
+    // 年长头发：花白侧分短发
+    const hairC = "#3a3532";
+    ctx.beginPath();
+    ctx.moveTo(hx - 22, 224);
+    ctx.quadraticCurveTo(hx - 25, 194, hx, 191);
+    ctx.quadraticCurveTo(hx + 25, 194, hx + 22, 224);
+    ctx.quadraticCurveTo(hx + 18, 212, hx + 8, 215);
+    ctx.quadraticCurveTo(hx - 4, 217, hx - 12, 211);
+    ctx.quadraticCurveTo(hx - 18, 214, hx - 22, 224);
+    ctx.closePath();
+    fsC(hairC, "#211d1b", 1.4);
+    // 灰白鬓角与发丝
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(hx - 21, 214); ctx.quadraticCurveTo(hx - 22, 222, hx - 20, 229);
+    ctx.moveTo(hx + 21, 214); ctx.quadraticCurveTo(hx + 22, 222, hx + 20, 229);
+    ctx.moveTo(hx - 16, 208); ctx.quadraticCurveTo(hx - 15, 214, hx - 14, 218);
+    ctx.moveTo(hx + 15, 206); ctx.quadraticCurveTo(hx + 16, 212, hx + 16, 216);
+    inkC("rgba(190,193,196,0.75)", 1.6);
+    ctx.beginPath(); ctx.moveTo(hx - 8, 194); ctx.quadraticCurveTo(hx - 12, 202, hx - 13, 209); inkC("rgba(200,203,206,0.5)", 1.3);
+    ctx.beginPath(); ctx.moveTo(hx - 12, 199); ctx.quadraticCurveTo(hx, 194, hx + 12, 199); inkC("rgba(255,255,255,0.16)", 2.2);
+
+    // 抬头纹 + 眉间纹
+    ctx.beginPath();
+    ctx.moveTo(hx - 12, 205); ctx.quadraticCurveTo(hx, 202.5, hx + 12, 205);
+    ctx.moveTo(hx - 10, 210); ctx.quadraticCurveTo(hx, 208, hx + 10, 210);
+    inkC("rgba(140,88,55,0.3)", 1);
+    if (a > 0.2) {
+      ctx.beginPath();
+      ctx.moveTo(hx - 4, 214); ctx.lineTo(hx - 3, 220);
+      ctx.moveTo(hx + 4, 214); ctx.lineTo(hx + 3, 220);
+      inkC("rgba(140,88,55,0.4)", 1.1);
+    }
+
+    // 眉毛（浓、夹灰）
+    for (const s of [-1, 1]) {
+      const bxx = hx + s * 11.5;
+      ctx.beginPath();
+      if (a > 0.05) { ctx.moveTo(bxx + s * 7, 216); ctx.quadraticCurveTo(bxx, 213.5, bxx - s * 7, 218.5); }
+      else { ctx.moveTo(bxx + s * 7, 217.5); ctx.quadraticCurveTo(bxx, 215, bxx - s * 7, 217); }
+      inkC("#4a4038", 2.8);
+      ctx.beginPath();
+      ctx.moveTo(bxx + s * 4, 216.5); ctx.lineTo(bxx + s * 1, 216);
+      inkC("rgba(190,193,196,0.7)", 1.2);
+    }
+
+    // 眼睛（写实 + 眼袋）
+    for (const s of [-1, 1]) {
+      realEye(hx + s * 11.5, 226, 6.2, 3.7, eo, ["#a8815a", "#6d4c2c", "#3a2716"], "#2b2018", s, { irisK: 0.5, lashW: 1.3, bag: 1.15, bagC: "rgba(140,88,55,0.3)" });
+    }
+
+    // 金属细框眼镜
+    ctx.strokeStyle = "#7a7f86"; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.rect(hx - 21, 219, 18, 14);
+    ctx.rect(hx + 3, 219, 18, 14);
+    ctx.moveTo(hx - 3, 224); ctx.lineTo(hx + 3, 224);
+    ctx.moveTo(hx - 21, 224); ctx.lineTo(hx - 24, 223);
+    ctx.moveTo(hx + 21, 224); ctx.lineTo(hx + 24, 223);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(hx - 17, 222); ctx.lineTo(hx - 13, 224);
+    ctx.moveTo(hx + 7, 222); ctx.lineTo(hx + 11, 224);
+    ctx.stroke();
+
+    // 鼻（年长略大）+ 法令纹
+    ctx.beginPath(); ctx.moveTo(hx + 1, 228); ctx.quadraticCurveTo(hx + 4, 234, hx + 2.5, 237.5); inkC("rgba(150,90,55,0.55)", 1.5);
+    ctx.beginPath(); ctx.moveTo(hx - 3, 238); ctx.quadraticCurveTo(hx, 239.5, hx + 3, 238); inkC("rgba(150,90,55,0.4)", 1.2);
+    ctx.beginPath();
+    ctx.moveTo(hx - 6, 238); ctx.quadraticCurveTo(hx - 8.5, 243, hx - 6.5, 246.5);
+    ctx.moveTo(hx + 6, 238); ctx.quadraticCurveTo(hx + 8.5, 243, hx + 6.5, 246.5);
+    inkC("rgba(140,88,55,0.3)", 1.1);
+
+    // 胡茬阴影 + 嘴
+    ctx.beginPath(); ctx.ellipse(hx, hy + 19, 12, 7, 0, 0, TAU); fillC("rgba(95,95,100,0.12)");
+    if (a > 0.45) {
+      ctx.beginPath(); ctx.ellipse(hx, 243, 11, a * 9.5, 0, 0, TAU); fillC("#6d1622");
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(hx, 243, 11, a * 9.5, 0, 0, TAU); ctx.clip();
+      ctx.fillStyle = "#f6f4ec";
+      ctx.fillRect(hx - 11, 243 - a * 9.5, 22, 3);
+      ctx.fillRect(hx - 11, 243 + a * 9.5 - 3, 22, 3);
+      ctx.restore();
+    } else {
+      ctx.beginPath(); ctx.moveTo(hx - 7, 242.5); ctx.quadraticCurveTo(hx, 240.5, hx + 7, 242.5); inkC("#8a5a44", 2);
+      ctx.beginPath(); ctx.moveTo(hx - 4, 245.5); ctx.quadraticCurveTo(hx, 246.8, hx + 4, 245.5); inkC("rgba(150,95,70,0.35)", 1.1);
+    }
+
+    // 怒气特效
+    if (a > 0.05) {
+      ctx.font = "34px sans-serif";
+      ctx.textAlign = "center";
+      ctx.globalAlpha = clamp(a, 0, 1);
+      ctx.fillText("💢", hx - 82, hy - 44);
+      ctx.fillText("💢", hx + 86, hy - 28);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      ctx.lineWidth = 4.5;
+      for (const i of [0, 2]) {
+        const sy = hy - 40 - Math.sin(now * 6 + i) * 6;
+        ctx.beginPath();
+        ctx.moveTo(hx - 70 + i * 66, sy);
+        ctx.quadraticCurveTo(hx - 70 + i * 66 - 7, sy - 12, hx - 70 + i * 66 + 4, sy - 24);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore(); // 头组
+    ctx.restore(); // 呼吸组
+    ctx.restore(); // 全身
+  }
+
+  // ---------------- 写实风·美女学生（高马尾） ----------------
+  function drawGirl() {
+    const gx = 700;
+    const gy = 550;
+
+    const cry = mode === "crying" || mode === "fallen";
+    let phase = -1;
+    if (mode === "crying") phase = now - cryStart;
+    if (mode === "fallen") phase = CRY_SECONDS + FALL_SECONDS + 0.05;
+
+    let fallK = 0;
+    if (phase >= CRY_SECONDS) fallK = easeOut(clamp((phase - CRY_SECONDS) / FALL_SECONDS, 0, 1));
+
+    const breath = Math.sin(now * 1.9 + 1) * 1.2 * (1 - fallK);
+    const eo = cry ? 0.1 : blinkOpen(now, 0.0, 3.6);
+
+    // 地面阴影
+    ctx.fillStyle = "rgba(60,40,20,0.18)";
+    ctx.beginPath();
+    ctx.ellipse(gx, gy + 3, fallK > 0.9 ? 330 : 56, 9, 0, 0, TAU);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(gx, gy);
+    if (cry) ctx.translate(Math.sin(now * 22) * 2.2, 0);
+    ctx.rotate(-fallK * Math.PI / 2);
+    ctx.rotate(Math.sin(now * 0.75) * 0.008 * (1 - fallK));
+
+    // 腿
+    const pantG = ctx.createLinearGradient(0, -172, 0, -6);
+    pantG.addColorStop(0, "#4a83dc"); pantG.addColorStop(1, "#20488c");
+    ctx.beginPath();
+    ctx.moveTo(-19, -172); ctx.lineTo(-5, -172); ctx.lineTo(-6, -8); ctx.lineTo(-17, -8); ctx.closePath();
+    fsC(pantG, "#16346a", 1.6);
+    ctx.beginPath();
+    ctx.moveTo(5, -172); ctx.lineTo(19, -172); ctx.lineTo(17, -8); ctx.lineTo(6, -8); ctx.closePath();
+    fsC(pantG, "#16346a", 1.6);
+    ctx.beginPath(); ctx.moveTo(-14.5, -166); ctx.lineTo(-13.5, -12); ctx.moveTo(14.5, -166); ctx.lineTo(13.5, -12);
+    inkC("rgba(255,255,255,0.85)", 2);
+    ctx.beginPath(); ctx.moveTo(-12, -160); ctx.quadraticCurveTo(-10, -100, -11, -20); ctx.moveTo(12, -160); ctx.quadraticCurveTo(10, -100, 11, -20);
+    inkC("rgba(0,0,0,0.14)", 1.2);
+    ctx.beginPath(); ctx.moveTo(-16, -14); ctx.lineTo(-7, -14); ctx.moveTo(7, -14); ctx.lineTo(16, -14);
+    inkC("#1a3d78", 3);
+    ctx.beginPath(); ctx.ellipse(-11, -4, 13, 6, 0, 0, TAU); ctx.ellipse(11, -4, 13, 6, 0, 0, TAU);
+    fsC("#f6f9fb", "#aeb9c2", 1.4);
+    ctx.beginPath(); ctx.ellipse(-9, -1.5, 8, 2.2, 0, 0, TAU); ctx.ellipse(9, -1.5, 8, 2.2, 0, 0, TAU);
+    fillC("#24549f");
+
+    // 裤腰
+    ctx.beginPath(); ctx.moveTo(-21, -178); ctx.lineTo(21, -178); ctx.lineTo(19, -168); ctx.lineTo(-19, -168); ctx.closePath();
+    fsC("#1d4483", "#122c58", 1.4);
+    ctx.beginPath(); ctx.moveTo(-19, -171); ctx.lineTo(19, -171); inkC("rgba(255,255,255,0.85)", 2);
+
+    // ---- 呼吸组 ----
+    ctx.save();
+    ctx.translate(0, breath);
+
+    // 脖子
+    ctx.beginPath(); ctx.moveTo(-5.5, -278); ctx.lineTo(5.5, -278); ctx.lineTo(6.5, -266); ctx.lineTo(-6.5, -266); ctx.closePath();
+    fsC("#eab28a", "#c08a5e", 1.2);
+    ctx.beginPath(); ctx.ellipse(0, -274, 5.5, 2.4, 0, 0, TAU); fillC("rgba(160,95,60,0.25)");
+
+    // 运动上衣
+    const shirtG = ctx.createLinearGradient(0, -268, 0, -176);
+    shirtG.addColorStop(0, "#79b6f6"); shirtG.addColorStop(0.5, "#4183da"); shirtG.addColorStop(1, "#245aa8");
+    ctx.beginPath();
+    ctx.moveTo(-27, -264);
+    ctx.quadraticCurveTo(-30, -230, -24, -176);
+    ctx.lineTo(24, -176);
+    ctx.quadraticCurveTo(30, -230, 27, -264);
+    ctx.quadraticCurveTo(0, -274, -27, -264);
+    ctx.closePath();
+    fsC(shirtG, "#1a4180", 1.6);
+    ctx.beginPath();
+    ctx.moveTo(-16, -250); ctx.quadraticCurveTo(-14, -216, -16, -184);
+    ctx.moveTo(16, -250); ctx.quadraticCurveTo(14, -216, 16, -184);
+    inkC("rgba(0,0,0,0.14)", 1.2);
+    ctx.beginPath(); ctx.moveTo(0, -266); ctx.lineTo(0, -178); inkC("rgba(255,255,255,0.9)", 2.2);
+    ctx.beginPath();
+    ctx.moveTo(-23, -260); ctx.quadraticCurveTo(-25, -222, -20, -180);
+    ctx.moveTo(23, -260); ctx.quadraticCurveTo(25, -222, 20, -180);
+    inkC("rgba(255,255,255,0.8)", 3);
+    ctx.beginPath(); ctx.moveTo(-10, -266); ctx.lineTo(0, -259); ctx.lineTo(10, -266); ctx.lineTo(0, -271); ctx.closePath();
+    fsC("#eef6ff", "#9fb6d6", 1.2);
+
+    // 手臂
+    ctx.lineCap = "round";
+    if (cry) {
+      ctx.beginPath();
+      ctx.moveTo(-25, -258); ctx.quadraticCurveTo(-38, -278, -16, -290);
+      ctx.moveTo(25, -258); ctx.quadraticCurveTo(38, -278, 16, -290);
+      inkC("#245aa8", 11);
+      ctx.beginPath();
+      ctx.moveTo(-25, -258); ctx.quadraticCurveTo(-38, -278, -16, -290);
+      ctx.moveTo(25, -258); ctx.quadraticCurveTo(38, -278, 16, -290);
+      inkC("#4183da", 7.5);
+      circle(-15, -290, 5, "#f0bd92"); circle(15, -290, 5, "#f0bd92");
+    } else {
+      const swing = Math.sin(now * 1.3) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-25, -258); ctx.quadraticCurveTo(-31 + swing * 0.4, -220, -29 + swing, -182);
+      ctx.moveTo(25, -258); ctx.quadraticCurveTo(31 - swing * 0.4, -220, 29 - swing, -182);
+      inkC("#245aa8", 11);
+      ctx.beginPath();
+      ctx.moveTo(-25, -258); ctx.quadraticCurveTo(-31 + swing * 0.4, -220, -29 + swing, -182);
+      ctx.moveTo(25, -258); ctx.quadraticCurveTo(31 - swing * 0.4, -220, 29 - swing, -182);
+      inkC("#4183da", 7.5);
+      circle(-29 + swing, -178, 5.5, "#f0bd92"); circle(29 - swing, -178, 5.5, "#f0bd92");
+    }
+
+    // ---- 头部组（轻摆 + 马尾摆动） ----
+    ctx.save();
+    ctx.translate(0, -272);
+    ctx.rotate(Math.sin(now * 0.62) * 0.02 * (1 - fallK));
+    ctx.translate(0, 272);
+
+    // 马尾（摆动）
+    ctx.save();
+    ctx.translate(12, -308);
+    ctx.rotate(Math.sin(now * 2.2) * 0.05 * (1 - fallK));
+    ctx.translate(-12, 308);
+    const pg = ctx.createLinearGradient(10, -316, 34, -186);
+    pg.addColorStop(0, "#6b4a30"); pg.addColorStop(0.5, "#4a3322"); pg.addColorStop(1, "#332115");
+    ctx.beginPath();
+    ctx.moveTo(6, -316);
+    ctx.quadraticCurveTo(36, -298, 36, -252);
+    ctx.quadraticCurveTo(36, -212, 20, -182);
+    ctx.quadraticCurveTo(25, -220, 23, -254);
+    ctx.quadraticCurveTo(21, -294, 0, -310);
+    ctx.closePath();
+    fsC(pg, "#241610", 1.4);
+    ctx.beginPath();
+    ctx.moveTo(18, -298); ctx.quadraticCurveTo(29, -266, 27, -228);
+    ctx.moveTo(13, -302); ctx.quadraticCurveTo(22, -272, 21, -240);
+    inkC("rgba(196,150,105,0.5)", 1.6);
+    ctx.restore();
+
+    // 头
+    headPath(0, -303, 21, 25);
+    const hg = ctx.createLinearGradient(-21, -328, 21, -278);
+    hg.addColorStop(0, "#ffe8d4"); hg.addColorStop(0.6, "#f7cdaa"); hg.addColorStop(1, "#eab48c");
+    fsC(hg, "rgba(160,100,65,0.5)", 1.3);
+    // 面部体积
+    ctx.beginPath(); ctx.ellipse(-11, -292, 7, 5, -0.3, 0, TAU); ctx.ellipse(11, -292, 7, 5, 0.3, 0, TAU);
+    fillC("rgba(226,120,110,0.14)");
+    ctx.beginPath(); ctx.ellipse(0, -283, 5, 3, 0, 0, TAU); fillC("rgba(190,120,80,0.1)");
+
+    // 头发：栗色 curtain bangs + 贴头盖
+    const hairC2 = "#4a3322";
+    ctx.beginPath();
+    ctx.moveTo(-22, -302);
+    ctx.quadraticCurveTo(-25, -328, 0, -330);
+    ctx.quadraticCurveTo(25, -328, 22, -302);
+    ctx.quadraticCurveTo(20, -313, 14, -309);
+    ctx.quadraticCurveTo(7, -316, 1, -310);
+    ctx.quadraticCurveTo(-6, -316, -13, -309);
+    ctx.quadraticCurveTo(-19, -313, -22, -302);
+    ctx.closePath();
+    fsC("#4a3322", null);
+    // 侧发缕修饰脸型
+    ctx.beginPath(); ctx.moveTo(-21, -306); ctx.quadraticCurveTo(-25, -290, -20, -272); ctx.quadraticCurveTo(-18, -284, -16, -294); ctx.closePath();
+    fsC("#4a3322", null);
+    ctx.beginPath(); ctx.moveTo(21, -306); ctx.quadraticCurveTo(25, -290, 20, -272); ctx.quadraticCurveTo(18, -284, 16, -294); ctx.closePath();
+    fsC("#4a3322", null);
+    // 发根接马尾 + 发圈
+    ctx.beginPath(); ctx.moveTo(16, -312); ctx.quadraticCurveTo(24, -314, 28, -306); ctx.quadraticCurveTo(22, -302, 16, -304); ctx.closePath();
+    fsC("#4a3322", null);
+    circle(23, -305, 4.2, "#d84a63");
+    ctx.beginPath(); ctx.arc(23, -305, 4.2, 0, TAU); inkC("#93293d", 1.2);
+    // 发丝高光
+    ctx.beginPath();
+    ctx.moveTo(-12, -322); ctx.quadraticCurveTo(0, -326, 12, -322);
+    ctx.moveTo(-8, -316); ctx.quadraticCurveTo(-2, -319, 4, -316);
+    inkC("rgba(214,168,120,0.55)", 1.6);
+
+    // 眉（细长自然）
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-14, -313.5); ctx.quadraticCurveTo(-9, -316.5, -4, -314.5);
+    ctx.moveTo(4, -314.5); ctx.quadraticCurveTo(9, -316.5, 14, -313.5);
+    inkC("#5b3a28", 1.7);
+
+    // 脸
+    if (cry) {
+      // 闭眼哭：弯睫线 + 泪
+      ctx.beginPath();
+      ctx.moveTo(-13, -302); ctx.quadraticCurveTo(-8.5, -298, -4, -302);
+      ctx.moveTo(4, -302); ctx.quadraticCurveTo(8.5, -298, 13, -302);
+      inkC("#3a2417", 2);
+      ctx.beginPath();
+      ctx.moveTo(-12, -300); ctx.lineTo(-10, -296);
+      ctx.moveTo(-8, -299); ctx.lineTo(-7, -295);
+      ctx.moveTo(12, -300); ctx.lineTo(10, -296);
+      ctx.moveTo(8, -299); ctx.lineTo(7, -295);
+      inkC("#3a2417", 1.1);
+      const td = Math.sin(now * 5) * 4;
+      ctx.beginPath();
+      ctx.moveTo(-9, -296); ctx.lineTo(-13, -276 + td);
+      ctx.moveTo(9, -296); ctx.lineTo(13, -268 - td);
+      inkC("rgba(120,195,255,0.85)", 4);
+      circle(-14, -272 + td, 4.6, "rgba(130,200,255,0.9)");
+      circle(14, -264 - td, 4.6, "rgba(130,200,255,0.9)");
+      ctx.beginPath(); ctx.ellipse(0, -286, 6, 7.5, 0, 0, TAU); fillC("#8f2530");
+      ctx.beginPath(); ctx.ellipse(0, -283, 3.6, 3.2, 0, 0, TAU); fillC("#e8717d");
+    } else {
+      realEye(-8.5, -302, 7.4, 4.0, eo, ["#c89a66", "#7a4e2a", "#3c2412"], "#2e1c12", -1, { irisK: 0.52, lashW: 1.45, fold: true, bag: 0.9, bagC: "rgba(210,140,110,0.25)" });
+      realEye(8.5, -302, 7.4, 4.0, eo, ["#c89a66", "#7a4e2a", "#3c2412"], "#2e1c12", 1, { irisK: 0.52, lashW: 1.45, fold: true, bag: 0.9, bagC: "rgba(210,140,110,0.25)" });
+      // 鼻
+      ctx.beginPath(); ctx.moveTo(0.6, -297); ctx.quadraticCurveTo(2, -294, 0.6, -292.4); inkC("rgba(180,115,80,0.5)", 1.2);
+      ctx.beginPath(); ctx.moveTo(-1.6, -291.6); ctx.quadraticCurveTo(0, -290.6, 1.6, -291.6); inkC("rgba(180,115,80,0.35)", 1);
+      // 唇（饱满玫瑰色）
+      ctx.beginPath();
+      ctx.moveTo(-4.6, -287.5);
+      ctx.quadraticCurveTo(-2.2, -290, 0, -288.8);
+      ctx.quadraticCurveTo(2.2, -290, 4.6, -287.5);
+      ctx.quadraticCurveTo(2.2, -286.6, 0, -286.9);
+      ctx.quadraticCurveTo(-2.2, -286.6, -4.6, -287.5);
+      ctx.closePath();
+      fillC("#b85c60");
+      ctx.beginPath();
+      ctx.moveTo(-4.6, -287.5);
+      ctx.quadraticCurveTo(0, -282.6, 4.6, -287.5);
+      ctx.quadraticCurveTo(0, -285.6, -4.6, -287.5);
+      ctx.closePath();
+      fillC("#cf7176");
+      ctx.beginPath(); ctx.ellipse(0.8, -285.2, 1.6, 0.8, 0, 0, TAU); fillC("rgba(255,255,255,0.5)");
+      ctx.beginPath(); ctx.moveTo(-4.6, -287.5); ctx.quadraticCurveTo(0, -286.4, 4.6, -287.5); inkC("rgba(120,50,55,0.5)", 0.9);
+    }
+
+    ctx.restore(); // 头组
+    ctx.restore(); // 呼吸组
+
+    // 状态符号
+    if (mode === "fallen") {
+      ctx.font = "28px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(80,60,160,0.8)";
+      ctx.fillText("💫", -10, -110);
+    } else if (mode === "cheered") {
+      ctx.font = "28px sans-serif";
+      ctx.textAlign = "center";
+      ctx.globalAlpha = 0.85 + Math.sin(now * 5) * 0.15;
+      ctx.fillStyle = "#f7c94f";
+      ctx.fillText("✦", -30, -340);
+      ctx.fillText("✦", 28, -331);
+      ctx.fillText("✦", -39, -318);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore(); // 全身
+  }
+
+  // ---------------- 主循环 ----------------
+  function updateState() {
+    if (mode === "angry" && now - angryStart >= ANGRY_SECONDS) {
+      mode = "crying";
+      cryStart = now;
+      updateUI();
+    } else if (mode === "crying" && now - cryStart >= CRY_SECONDS + FALL_SECONDS) {
+      mode = "fallen";
+      updateUI();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawRoom();
+
+    let teacherAnger = 0;
+    if (mode === "angry") {
+      teacherAnger = easeOut(clamp((now - angryStart) / 0.45, 0, 1));
+    } else if (mode === "crying") {
+      teacherAnger = 0.85;
+    } else if (mode === "fallen") {
+      teacherAnger = 0.35;
+    }
+
+    drawTeacher(teacherAnger);
+    drawGirl();
+  }
+
+  let last = performance.now();
+  function loop(t) {
+    now = t / 1000;
+    const dt = Math.min(0.05, (t - last) / 1000);
+    last = t;
+    if (dt > 0) updateState();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function onPointer(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (W / rect.width);
+    const y = (e.clientY - rect.top) * (H / rect.height);
+    const onBoard = x >= 300 && y <= 300;
+    const nearTeacher = x > 130 && x < 450 && y > 185 && y < 570;
+
+    if (mode === "fallen" || mode === "cheered") {
+      const girlHit = mode === "fallen"
+        ? x > 340 && x < 810 && y > 480 && y < 590
+        : x > 550 && x < 820 && y > 150 && y < 590;
+      if (girlHit) {
+        cheerUpGirl();
+        return;
+      }
+    }
+
+    if (nearTeacher && !onBoard) {
+      if (mode === "idle" || mode === "cheered" || mode === "fallen") {
+        startAnger();
+      }
+    }
+  }
+
+  canvas.addEventListener("pointerdown", onPointer);
+  restartBtn.addEventListener("click", reset);
+  window.addEventListener("resize", resize);
+
+  resize();
+  updateUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
