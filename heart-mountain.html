@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060b1c">
+<title>wyf爬山快乐</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%96%3C/text%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 12px;
+    background:
+      radial-gradient(900px 520px at 20% -10%, #1d2a52 0%, transparent 62%),
+      radial-gradient(900px 520px at 85% 110%, #2a1c46 0%, transparent 62%),
+      linear-gradient(160deg, #080d1e 0%, #0d1430 55%, #070a16 100%);
+    color: #eef3ff;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    touch-action: manipulation;
+  }
+
+  .stage {
+    width: min(100%, 1080px);
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(19px, 4vw, 30px);
+    letter-spacing: 0.08em;
+    background: linear-gradient(90deg, #ff8fb8, #ffd98a, #7ee6ff, #b79bff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  header .tag {
+    color: rgba(238, 243, 255, 0.62);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+
+  .scene {
+    position: relative;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1200 / 760;
+    border-radius: 18px;
+    background: #060a18;
+    box-shadow:
+      0 26px 70px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+
+  .hint {
+    position: absolute;
+    left: 50%;
+    bottom: 7%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background: rgba(10, 16, 36, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: clamp(12px, 2.4vw, 16px);
+    letter-spacing: 0.1em;
+    padding: 9px 18px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: opacity 0.5s ease;
+  }
+
+  .hint.hide { opacity: 0; }
+
+  .restart {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    background: rgba(12, 18, 40, 0.58);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 15px;
+    border-radius: 999px;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  .restart:hover { background: rgba(255, 255, 255, 0.16); }
+
+  .topnav {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 30;
+  }
+
+  .topnav a {
+    display: inline-block;
+    color: #eef3ff;
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 7px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(10, 16, 36, 0.55);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  .footnote {
+    margin-top: 12px;
+    text-align: center;
+    color: rgba(238, 243, 255, 0.45);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+  }
+</style>
+</head>
+<body>
+  <nav class="topnav"><a href="./index.html">‹ 返回首页</a></nav>
+
+  <main class="stage">
+    <header>
+      <h1>wyf 爬山快乐</h1>
+      <span class="tag">🏔 玉龙雪山 · 星空祝福</span>
+    </header>
+
+    <div class="scene">
+      <canvas id="stage" width="1200" height="760"></canvas>
+      <button class="restart" id="restartBtn" type="button">↻ 重新开始</button>
+      <div class="hint" id="hint">点击正中央的星星爱心</div>
+    </div>
+
+    <p class="footnote">星星组成的爱 · 送给你</p>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const hint = document.getElementById("hint");
+  const restartBtn = document.getElementById("restartBtn");
+
+  const W = 1200;
+  const H = 760;
+  const TAU = Math.PI * 2;
+
+  const HEART_X = 600;
+  const HEART_Y = 345;
+  const LAUNCH_Y = 200;
+  const TEXT_Y = 232;
+  const TEXT = "wyf爬山快乐";
+  const CHAR_COLORS = [
+    [255, 110, 160],
+    [255, 214, 110],
+    [110, 226, 255],
+    [150, 255, 170],
+    [200, 160, 255],
+    [130, 170, 255],
+    [255, 160, 110]
+  ];
+  const FONT = "900 104px 'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif";
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const easeOutCubic = (k) => 1 - Math.pow(1 - k, 3);
+  const lerp = (a, b, k) => a + (b - a) * k;
+
+  function hslToRgb(h, s, l) {
+    h = ((h % 360) + 360) % 360 / 360;
+    s /= 100;
+    l /= 100;
+    if (s === 0) {
+      const v = Math.round(l * 255);
+      return [v, v, v];
+    }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const hue = (t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    return [
+      Math.round(hue(h + 1 / 3) * 255),
+      Math.round(hue(h) * 255),
+      Math.round(hue(h - 1 / 3) * 255)
+    ];
+  }
+
+  function rgba(c, a) {
+    return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+  }
+
+  function mix(a, b, k) {
+    return [
+      Math.round(lerp(a[0], b[0], k)),
+      Math.round(lerp(a[1], b[1], k)),
+      Math.round(lerp(a[2], b[2], k))
+    ];
+  }
+
+  function resizeCanvas() {
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  }
+
+  // ---------------- 背景：夜空、月亮、玉龙雪山 ----------------
+  const skyStars = [];
+  for (let i = 0; i < 260; i++) {
+    skyStars.push({
+      x: Math.random() * W,
+      y: Math.random() * 560,
+      r: rand(0.5, 1.6),
+      phase: rand(0, TAU),
+      speed: rand(0.4, 1.6)
+    });
+  }
+
+  function drawSky(t) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#05081a");
+    g.addColorStop(0.45, "#0b1533");
+    g.addColorStop(0.78, "#16224a");
+    g.addColorStop(1, "#070b1a");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // 银河带
+    ctx.save();
+    ctx.translate(880, 120);
+    ctx.rotate(-0.5);
+    const milky = ctx.createLinearGradient(-420, 0, 420, 0);
+    milky.addColorStop(0, "rgba(140,170,255,0)");
+    milky.addColorStop(0.5, "rgba(160,190,255,0.10)");
+    milky.addColorStop(1, "rgba(140,170,255,0)");
+    ctx.fillStyle = milky;
+    ctx.fillRect(-420, -80, 840, 160);
+    ctx.restore();
+
+    // 背景星空
+    ctx.globalCompositeOperation = "lighter";
+    for (const s of skyStars) {
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+      ctx.fillStyle = "rgba(210,225,255," + tw + ")";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    // 月亮
+    const mx = 985, my = 132;
+    const glow = ctx.createRadialGradient(mx, my, 10, mx, my, 120);
+    glow.addColorStop(0, "rgba(220,232,255,0.5)");
+    glow.addColorStop(0.35, "rgba(180,205,255,0.12)");
+    glow.addColorStop(1, "rgba(180,205,255,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(mx - 130, my - 130, 260, 260);
+    const moon = ctx.createRadialGradient(mx - 10, my - 12, 4, mx, my, 42);
+    moon.addColorStop(0, "#fbfdff");
+    moon.addColorStop(1, "#c8d6f0");
+    ctx.fillStyle = moon;
+    ctx.beginPath();
+    ctx.arc(mx, my, 40, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = "rgba(150,170,205,0.28)";
+    ctx.beginPath();
+    ctx.arc(mx - 12, my + 8, 7, 0, TAU);
+    ctx.arc(mx + 14, my - 6, 5, 0, TAU);
+    ctx.arc(mx + 4, my + 18, 4, 0, TAU);
+    ctx.fill();
+  }
+
+  function ridgePath(points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+  }
+
+  // 早期版本的山体绘制（保留作参考，不再调用）
+  function drawMountainsLegacy() {
+    // 远处山脊
+    ctx.fillStyle = "#101a34";
+    ridgePath([[-40, 640], [90, 540], [200, 590], [320, 500], [430, 570], [560, 480], [690, 560], [820, 500], [950, 570], [1080, 520], [1240, 620], [1240, 780], [-40, 780]]);
+    ctx.closePath();
+    ctx.fill();
+
+    // 主山体（玉龙雪山）
+    const body = ctx.createLinearGradient(0, 330, 0, 700);
+    body.addColorStop(0, "#2a3c66");
+    body.addColorStop(0.55, "#16224a");
+    body.addColorStop(1, "#0a1024");
+    ctx.fillStyle = body;
+    ridgePath([
+      [-60, 660], [60, 560], [170, 600], [250, 520], [330, 400], [400, 520],
+      [470, 330], [540, 470], [610, 392], [700, 350], [790, 470], [880, 430],
+      [980, 540], [1090, 490], [1260, 660], [1260, 780], [-60, 780]
+    ]);
+    ctx.closePath();
+    ctx.fill();
+
+    // 雪峰：主峰群
+    const peaks = [
+      { x: 330, y: 400, w: 96 },
+      { x: 470, y: 330, w: 128 },
+      { x: 700, y: 350, w: 132 },
+      { x: 880, y: 430, w: 104 },
+      { x: 1090, y: 490, w: 86 }
+    ];
+    for (const p of peaks) {
+      const snow = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.w);
+      snow.addColorStop(0, "#dfe8fb");
+      snow.addColorStop(0.55, "#b3c4e4");
+      snow.addColorStop(1, "#7c90b8");
+      ctx.fillStyle = snow;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.w * 0.45, p.y + p.w * 0.72);
+      ctx.lineTo(p.x - p.w * 0.18, p.y + p.w * 0.6);
+      ctx.lineTo(p.x - p.w * 0.05, p.y + p.w * 0.82);
+      ctx.lineTo(p.x + p.w * 0.16, p.y + p.w * 0.58);
+      ctx.lineTo(p.x + p.w * 0.34, p.y + p.w * 0.78);
+      ctx.lineTo(p.x + p.w * 0.52, p.y + p.w * 0.66);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(90,112,158,0.65)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 6);
+      ctx.lineTo(p.x - 6, p.y + p.w * 0.5);
+      ctx.moveTo(p.x + 11, p.y + 16);
+      ctx.lineTo(p.x + 4, p.y + p.w * 0.54);
+      ctx.stroke();
+    }
+
+    // 山间云雾
+    const mist = ctx.createLinearGradient(0, 470, 0, 610);
+    mist.addColorStop(0, "rgba(190,210,255,0)");
+    mist.addColorStop(0.5, "rgba(190,210,255,0.16)");
+    mist.addColorStop(1, "rgba(190,210,255,0)");
+    ctx.fillStyle = mist;
+    ctx.fillRect(0, 470, W, 140);
+
+    // 前景山脊与松树剪影
+    ctx.fillStyle = "#060b16";
+    ridgePath([[-40, 700], [80, 660], [200, 690], [340, 645], [480, 690], [620, 655], [760, 695], [900, 650], [1040, 690], [1240, 655], [1240, 780], [-40, 780]]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#04070f";
+    for (let x = 30; x < W; x += 74) {
+      const h = 26 + ((x * 37) % 22);
+      const y = 672 - ((x * 13) % 16);
+      ctx.beginPath();
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x - 13, y + 8);
+      ctx.lineTo(x + 13, y + 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ---------------- 星星爱心粒子 ----------------
+  function ridgeSilhouette(baseY, amp, wavelength, offset, color, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-40, 780);
+    for (let x = -40; x <= W + 40; x += 12) {
+      const y = baseY
+        - Math.sin((x + offset) / wavelength) * amp
+        - Math.sin((x + offset) / (wavelength * 0.37) + 1.7) * amp * 0.35;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W + 40, 780);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPeak(p) {
+    const { x, y, w, h } = p;
+    const bottom = y + h;
+
+    // 背光面（左侧）
+    const shade = ctx.createLinearGradient(x - w, bottom, x, y);
+    shade.addColorStop(0, "#0a1020");
+    shade.addColorStop(0.55, "#131d38");
+    shade.addColorStop(1, "#26355a");
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - w, bottom);
+    ctx.lineTo(x, bottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // 受光面（右侧，月光来自画面右边）
+    const lit = ctx.createLinearGradient(x, y, x + w, bottom);
+    lit.addColorStop(0, "#4a6494");
+    lit.addColorStop(0.45, "#2e4067");
+    lit.addColorStop(1, "#111a30");
+    ctx.fillStyle = lit;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, bottom);
+    ctx.lineTo(x, bottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // 岩层纹理
+    ctx.save();
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 7; i++) {
+      const k = 0.14 + i * 0.11;
+      const dir = i % 2 === 0 ? 1 : -1;
+      ctx.strokeStyle = dir > 0 ? "rgba(150,175,220,0.16)" : "rgba(0,0,0,0.22)";
+      ctx.beginPath();
+      ctx.moveTo(x + dir * w * 0.05 * i, y + h * k);
+      ctx.lineTo(x + dir * w * 0.42, y + h * Math.min(0.96, k + 0.34));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 山脊高光
+    ctx.strokeStyle = "rgba(190,215,255,0.35)";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 2);
+    ctx.quadraticCurveTo(x + w * 0.28, y + h * 0.42, x + w, bottom);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 3);
+    ctx.quadraticCurveTo(x - w * 0.3, y + h * 0.46, x - w, bottom);
+    ctx.stroke();
+
+    // 雪盖：带锯齿雪线，亮度右侧更高
+    const snow = ctx.createLinearGradient(x - w * 0.7, y, x + w * 0.6, y + h * 0.4);
+    snow.addColorStop(0, "#a8bbdb");
+    snow.addColorStop(0.45, "#dde8fa");
+    snow.addColorStop(1, "#f8fbff");
+    ctx.fillStyle = snow;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w * 0.52, y + h * 0.3);
+    ctx.lineTo(x + w * 0.34, y + h * 0.38);
+    ctx.lineTo(x + w * 0.2, y + h * 0.3);
+    ctx.lineTo(x + w * 0.06, y + h * 0.44);
+    ctx.lineTo(x - w * 0.1, y + h * 0.32);
+    ctx.lineTo(x - w * 0.26, y + h * 0.44);
+    ctx.lineTo(x - w * 0.42, y + h * 0.3);
+    ctx.lineTo(x - w * 0.6, y + h * 0.38);
+    ctx.lineTo(x - w * 0.72, y + h * 0.24);
+    ctx.closePath();
+    ctx.fill();
+
+    // 雪面背光阴影
+    ctx.fillStyle = "rgba(96,122,170,0.34)";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - w * 0.72, y + h * 0.24);
+    ctx.lineTo(x - w * 0.42, y + h * 0.3);
+    ctx.lineTo(x - w * 0.26, y + h * 0.44);
+    ctx.lineTo(x - w * 0.1, y + h * 0.32);
+    ctx.lineTo(x + w * 0.02, y + h * 0.3);
+    ctx.closePath();
+    ctx.fill();
+
+    // 受光雪脊
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x - 1, y + 1);
+    ctx.lineTo(x + w * 0.3, y + h * 0.26);
+    ctx.stroke();
+
+    // 山脚碎石阴影
+    ctx.fillStyle = "rgba(4,8,16,0.4)";
+    ctx.beginPath();
+    ctx.ellipse(x, bottom, w * 0.9, 16, 0, 0, TAU);
+    ctx.fill();
+  }
+
+  function drawMist(t) {
+    const bands = [
+      { y: 528, alpha: 0.1, speed: 16 },
+      { y: 574, alpha: 0.15, speed: -11 }
+    ];
+    for (const band of bands) {
+      const grad = ctx.createLinearGradient(0, band.y - 52, 0, band.y + 72);
+      grad.addColorStop(0, "rgba(200,220,255,0)");
+      grad.addColorStop(0.5, "rgba(200,220,255," + band.alpha + ")");
+      grad.addColorStop(1, "rgba(200,220,255,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, band.y - 52, W, 124);
+
+      ctx.fillStyle = "rgba(215,232,255,0.055)";
+      const span = W + 420;
+      for (let i = 0; i < 6; i++) {
+        const raw = i * 250 + t * band.speed;
+        const wx = ((raw % span) + span) % span - 210;
+        ctx.beginPath();
+        ctx.ellipse(wx, band.y + Math.sin(i * 1.7) * 12, 190, 17, 0, 0, TAU);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawMountains(t) {
+    // 远山：颜色更淡、更灰，形成大气透视
+    ridgeSilhouette(596, 40, 300, t * 4, "#2c3c62", 0.5);
+    ridgeSilhouette(636, 54, 220, t * 7 + 130, "#1c2846", 0.72);
+
+    const peaks = [
+      { x: 1010, y: 520, w: 150, h: 220 },
+      { x: 190, y: 500, w: 148, h: 210 },
+      { x: 878, y: 462, w: 172, h: 250 },
+      { x: 690, y: 428, w: 188, h: 292 },
+      { x: 336, y: 424, w: 168, h: 262 },
+      { x: 470, y: 396, w: 198, h: 300 },
+      { x: 600, y: 322, w: 232, h: 362 }
+    ];
+    peaks.sort((a, b) => b.y - a.y);
+    for (const p of peaks) drawPeak(p);
+
+    drawMist(t);
+
+    // 前景山脊与松树剪影
+    ctx.fillStyle = "#060b16";
+    ridgePath([[-40, 700], [80, 660], [200, 690], [340, 645], [480, 690], [620, 655], [760, 695], [900, 650], [1040, 690], [1240, 655], [1240, 780], [-40, 780]]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#04070f";
+    for (let x = 30; x < W; x += 74) {
+      const h = 26 + ((x * 37) % 22);
+      const y = 672 - ((x * 13) % 16);
+      ctx.beginPath();
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x - 13, y + 8);
+      ctx.lineTo(x + 13, y + 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  const PARTICLE_COUNT = 1800;
+  const particles = [];
+
+  // 按标准心形曲线填充采样：两个心房 + 中间凹口 + 下方尖角
+  const HEART_SAMPLES = [];
+  (function sampleHeartShape() {
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const u = Math.random() * TAU;
+      const hx = Math.pow(Math.sin(u), 3);
+      const hy = (13 * Math.cos(u) - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u)) / 16;
+      const r = Math.sqrt(Math.random());
+      const side = Math.random() < 0.5 ? -1 : 1;
+      HEART_SAMPLES.push({
+        hx: hx * r,
+        hy: hy * r,
+        depth: side * Math.sqrt(Math.max(0, 1 - r * r))
+      });
+    }
+  })();
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const s = HEART_SAMPLES[i % HEART_SAMPLES.length];
+    const roll = Math.random();
+    let color = [255, 58, 148];
+    if (roll > 0.92) color = [255, 210, 235];
+    else if (roll > 0.75) color = [255, 170, 88];
+    else if (roll > 0.5) color = [255, 100, 200];
+    particles.push({
+      hx: s.hx, hy: s.hy, depth: s.depth,
+      x: 0, y: 0, px: 0, py: 0,
+      size: rand(1.2, 2.6),
+      phase: rand(0, TAU),
+      speed: rand(1.2, 3.4),
+      baseColor: color,
+      glow: Math.random() < 0.14,
+      hue: 0,
+      burstColor: [255, 255, 255],
+      charColor: [255, 255, 255],
+      tx: 0, ty: 0, sx: 0, sy: 0,
+      delay: 0,
+      gAng: 0, gRad: 0
+    });
+  }
+
+  const heartOut = { x: 0, y: 0, persp: 1 };
+
+  function heartPoint(p, rot, tilt, out) {
+    // 心形左右摆动（±35°），配合厚度呈现立体感
+    const cy = Math.cos(rot), sy = Math.sin(rot);
+    const nx = p.hx;
+    const ny = p.hy;
+    const dz = p.depth * 0.5;
+    const X = nx * cy - dz * sy;
+    const D = nx * sy + dz * cy;
+    const V = -ny;
+    const ct = Math.cos(tilt), st = Math.sin(tilt);
+    const Y1 = V * ct - D * st;
+    const D1 = V * st + D * ct;
+
+    const S = 240;
+    const F = 1600;
+    const persp = F / (F + D1 * S);
+    out.x = HEART_X + X * S * persp;
+    out.y = HEART_Y + Y1 * S * persp;
+    out.depth = D1;
+    out.persp = persp;
+    return out;
+  }
+
+  function initHeartPositions() {
+    for (const p of particles) {
+        heartPoint(p, 0, 0.14, heartOut);
+      p.x = heartOut.x + rand(-4, 4);
+      p.y = heartOut.y + rand(-4, 4);
+      p.px = p.x;
+      p.py = p.y;
+    }
+  }
+
+  // ---------------- 文字目标点 ----------------
+  let textPoints = [];
+
+  function buildTextPoints() {
+    const off = document.createElement("canvas");
+    off.width = W;
+    off.height = H;
+    const octx = off.getContext("2d");
+    octx.font = FONT;
+    octx.textAlign = "center";
+    octx.textBaseline = "middle";
+
+    const chars = Array.from(TEXT);
+    const widths = chars.map((c) => octx.measureText(c).width);
+    const gap = 8;
+    const total = widths.reduce((a, b) => a + b, 0) + gap * (chars.length - 1);
+    let cursor = W / 2 - total / 2;
+    const points = [];
+
+    for (let ci = 0; ci < chars.length; ci++) {
+      const w = widths[ci];
+      const cx = cursor + w / 2;
+      octx.clearRect(0, 0, W, H);
+      octx.fillStyle = "#fff";
+      octx.fillText(chars[ci], cx, TEXT_Y);
+
+      const rx = Math.max(0, Math.floor(cx - w / 2) - 8);
+      const ry = Math.max(0, Math.floor(TEXT_Y - 76));
+      const rw = Math.min(W - rx, Math.ceil(w) + 16);
+      const rh = Math.min(H - ry, 152);
+      const data = octx.getImageData(rx, ry, rw, rh).data;
+
+      for (let y = 0; y < rh; y += 3) {
+        for (let x = 0; x < rw; x += 3) {
+          const alpha = data[(y * rw + x) * 4 + 3];
+          if (alpha > 150) {
+            points.push({ x: rx + x, y: ry + y, c: ci });
+          }
+        }
+      }
+      cursor += w + gap;
+    }
+    textPoints = points;
+  }
+
+  function assignTextTargets() {
+    const n = particles.length;
+    if (!textPoints.length) return;
+    for (let i = 0; i < n; i++) {
+      const p = particles[i];
+      const idx = Math.min(textPoints.length - 1, Math.floor((i / n) * textPoints.length));
+      const tp = textPoints[idx];
+      p.tx = tp.x + rand(-0.5, 0.5);
+      p.ty = tp.y + rand(-0.5, 0.5);
+      p.charColor = CHAR_COLORS[tp.c % CHAR_COLORS.length];
+      p.delay = rand(0, 0.32);
+    }
+  }
+
+  // ---------------- 状态机 ----------------
+  let state = "heart";
+  let stateTime = 0;
+  let last = performance.now();
+
+  const GATHER_DURATION = 1.0;
+  const LAUNCH_DURATION = 0.55;
+  const BURST_DURATION = 0.95;
+  const FORM_DURATION = 1.05;
+
+  function startGather() {
+    if (state !== "heart") return;
+    state = "gather";
+    stateTime = 0;
+    hint.classList.add("hide");
+    for (const p of particles) {
+      p.gAng = Math.atan2(p.y - HEART_Y, p.x - HEART_X);
+      p.gRad = Math.hypot(p.x - HEART_X, p.y - HEART_Y);
+    }
+  }
+
+  function startLaunch() {
+    state = "launch";
+    stateTime = 0;
+    for (const p of particles) {
+      p.sx = p.x;
+      p.sy = p.y;
+      p.px = p.x;
+      p.py = p.y;
+      p.hue = rand(0, 360);
+      p.burstColor = hslToRgb(p.hue, 100, 66);
+    }
+    assignTextTargets();
+  }
+
+  function startBurst() {
+    state = "burst";
+    stateTime = 0;
+    for (const p of particles) {
+      const angle = -Math.PI / 2 + rand(-1.5, 1.5);
+      const speed = rand(140, 430);
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.x = HEART_X + rand(-16, 16);
+      p.y = LAUNCH_Y + rand(-14, 14);
+      p.px = p.x;
+      p.py = p.y;
+      p.hue = rand(0, 360);
+      p.burstColor = hslToRgb(p.hue, 100, 66);
+    }
+  }
+
+  function startForm() {
+    state = "form";
+    stateTime = 0;
+    for (const p of particles) {
+      p.sx = p.x;
+      p.sy = p.y;
+      p.vx = 0;
+      p.vy = 0;
+    }
+  }
+
+  function reset() {
+    state = "heart";
+    stateTime = 0;
+    hint.classList.remove("hide");
+    initHeartPositions();
+  }
+
+  function updateState(dt) {
+    stateTime += dt;
+    if (state === "heart") {
+      const tt = performance.now() / 1000;
+      const rot = Math.sin(tt * 0.6) * 0.62;
+      const tilt = 0.14 + Math.sin(tt * 0.7) * 0.03;
+      for (const p of particles) {
+        heartPoint(p, rot, tilt, heartOut);
+        const k = 1 - Math.pow(0.0015, dt);
+        p.px = p.x;
+        p.py = p.y;
+        p.x += (heartOut.x - p.x) * k;
+        p.y += (heartOut.y - p.y) * k;
+        p.persp = heartOut.persp;
+      }
+    } else if (state === "gather") {
+      const g = clamp(stateTime / GATHER_DURATION, 0, 1);
+      const shrink = Math.pow(1 - g, 2.4);
+      for (const p of particles) {
+        const ang = p.gAng + g * 5.5;
+        const rad = p.gRad * shrink;
+        p.px = p.x;
+        p.py = p.y;
+        p.x = HEART_X + Math.cos(ang) * rad;
+        p.y = HEART_Y + Math.sin(ang) * rad;
+        p.persp = 1;
+      }
+      if (g >= 1) startLaunch();
+    } else if (state === "launch") {
+      const g = clamp(stateTime / LAUNCH_DURATION, 0, 1);
+      const e = easeOutCubic(g);
+      for (const p of particles) {
+        p.px = p.x;
+        p.py = p.y;
+        p.x = HEART_X + (p.sx - HEART_X) * (1 - e) + rand(-3, 3) * (1 - e);
+        p.y = HEART_Y + (LAUNCH_Y - HEART_Y) * e + rand(-4, 4) * (1 - e);
+      }
+      if (g >= 1) startBurst();
+    } else if (state === "burst") {
+      const g = clamp(stateTime / BURST_DURATION, 0, 1);
+      for (const p of particles) {
+        p.px = p.x;
+        p.py = p.y;
+        p.vy += 260 * dt;
+        p.vx *= 1 - 0.9 * dt;
+        p.vy *= 1 - 0.45 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+      if (g >= 1) startForm();
+    } else if (state === "form") {
+      for (const p of particles) {
+        const local = clamp((stateTime - p.delay) / FORM_DURATION, 0, 1);
+        const e = easeOutCubic(local);
+        p.px = p.x;
+        p.py = p.y;
+        p.x = p.sx + (p.tx - p.sx) * e;
+        p.y = p.sy + (p.ty - p.sy) * e;
+      }
+      if (stateTime >= FORM_DURATION + 0.35) {
+        state = "text";
+        stateTime = 0;
+      }
+    }
+  }
+
+  // ---------------- 绘制 ----------------
+  function particleColor(p, t) {
+    if (state === "heart") {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 1.6 + p.phase);
+      return mix(p.baseColor, [255, 255, 255], pulse * 0.16);
+    }
+    if (state === "gather") {
+      return mix(p.baseColor, [255, 245, 200], 0.45);
+    }
+    if (state === "launch") {
+      return mix([255, 240, 180], p.burstColor, clamp(stateTime / LAUNCH_DURATION, 0, 1));
+    }
+    if (state === "burst") {
+      return p.burstColor;
+    }
+    if (state === "form") {
+      const local = clamp((stateTime - p.delay) / FORM_DURATION, 0, 1);
+      return mix(p.burstColor, p.charColor, easeOutCubic(local));
+    }
+    return p.charColor;
+  }
+
+  function drawParticles(t) {
+    ctx.globalCompositeOperation = "lighter";
+    const trailing = state === "launch" || state === "burst" || state === "form";
+
+    for (const p of particles) {
+      const col = particleColor(p, t);
+      const tw = 0.7 + 0.3 * (0.5 + 0.5 * Math.sin(t * p.speed + p.phase));
+      let alpha = 0.82 * tw;
+      if (state === "gather" || state === "launch") alpha = 0.9;
+      if (state === "burst") alpha = 0.78;
+      if (state === "text") alpha = 0.5 + 0.28 * tw;
+
+      let size = p.size * (state === "heart" ? (p.persp || 1) : 1.05);
+      if (state === "burst") size += 0.5;
+
+      if (trailing) {
+        ctx.strokeStyle = rgba(col, alpha * 0.45);
+        ctx.lineWidth = Math.max(0.4, size * 0.8);
+        ctx.beginPath();
+        ctx.moveTo(p.px, p.py);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+
+      if (p.glow || state === "burst" || state === "text") {
+        ctx.fillStyle = rgba(col, alpha * 0.10);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 2.7, 0, TAU);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = rgba(col, alpha);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  function drawTextGlow() {
+    if (state !== "text" && state !== "form") return;
+    const chars = Array.from(TEXT);
+    ctx.save();
+    ctx.font = FONT;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const widths = chars.map((c) => ctx.measureText(c).width);
+    const gap = 8;
+    const total = widths.reduce((a, b) => a + b, 0) + gap * (chars.length - 1);
+    let cursor = W / 2 - total / 2;
+    const a = state === "text" ? 0.16 : clamp(stateTime / FORM_DURATION, 0, 1) * 0.12;
+    for (let i = 0; i < chars.length; i++) {
+      const w = widths[i];
+      ctx.fillStyle = rgba(CHAR_COLORS[i], a);
+      ctx.fillText(chars[i], cursor + w / 2, TEXT_Y);
+      cursor += w + gap;
+    }
+    ctx.restore();
+  }
+
+  function drawHeartAura() {
+    if (state === "burst" || state === "form" || state === "text") return;
+    const g = ctx.createRadialGradient(HEART_X, HEART_Y, 24, HEART_X, HEART_Y, 560);
+    g.addColorStop(0, "rgba(14,5,30,0.62)");
+    g.addColorStop(0.6, "rgba(14,5,30,0.32)");
+    g.addColorStop(1, "rgba(14,5,30,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(HEART_X, HEART_Y, 560, 0, TAU);
+    ctx.fill();
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    drawSky(t);
+    drawMountains(t);
+    drawHeartAura();
+    drawTextGlow();
+    drawParticles(t);
+  }
+
+  function loop(now) {
+    const t = now / 1000;
+    const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+    last = now;
+    updateState(dt);
+    draw(t);
+    requestAnimationFrame(loop);
+  }
+
+  function onPointer(e) {
+    if (state !== "heart") return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (W / rect.width);
+    const y = (e.clientY - rect.top) * (H / rect.height);
+    if (Math.hypot(x - HEART_X, y - HEART_Y) < 430) startGather();
+  }
+
+  canvas.addEventListener("pointerdown", onPointer);
+  restartBtn.addEventListener("click", reset);
+  window.addEventListener("resize", resizeCanvas);
+
+  resizeCanvas();
+  initHeartPositions();
+  buildTextPoints();
+  assignTextTargets();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
