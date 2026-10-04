@@ -4,3 +4,4 @@
 
 - ✨ [星空](stars.html)
 - 🚴 [鸸鹋骑自行车](emu-bike.html)
+- 🚄 [zyr · 无锡 → 兰州](zyr-train.html)
